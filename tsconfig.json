@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "strict": true,
+    "outDir": "./dist",
+    "declaration": true,
+    "target": "ES5",
+    "module": "commonjs",
+    "moduleResolution": "Node",
+    "sourceMap": true,
+    // remove 'DOM' when https://github.com/microsoft/TypeScript/issues/41727 is solved
+    "lib": ["es6", "DOM"],
+    "experimentalDecorators": true,
+  }
+}
