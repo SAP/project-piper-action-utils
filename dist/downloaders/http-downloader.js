@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
@@ -54,12 +65,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpDownloadBuilder = exports.ArchiveType = void 0;
 var tc = __importStar(require("@actions/tool-cache"));
 var fs = __importStar(require("fs"));
 var core = __importStar(require("@actions/core"));
 var pathUtils = __importStar(require("path"));
+var https_1 = __importDefault(require("https"));
+var axios_1 = __importDefault(require("axios"));
 var ArchiveType;
 (function (ArchiveType) {
     ArchiveType[ArchiveType["ZIP7"] = 0] = "ZIP7";
@@ -76,6 +92,7 @@ var HttpDownloadBuilder = /** @class */ (function () {
      */
     function HttpDownloadBuilder(name, version, url) {
         this._addToPath = true;
+        this._additionalHeaders = {};
         this._url = url;
         this._name = name;
         this._version = version;
@@ -124,17 +141,17 @@ var HttpDownloadBuilder = /** @class */ (function () {
     /**
      * Executes the download
      */
-    HttpDownloadBuilder.prototype.download = function () {
+    HttpDownloadBuilder.prototype.download = function (headers) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.downloadUsingCache()];
+                    case 0: return [4 /*yield*/, this.downloadUsingCache(headers)];
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             });
         });
     };
-    HttpDownloadBuilder.prototype.downloadUsingCache = function () {
+    HttpDownloadBuilder.prototype.downloadUsingCache = function (headers) {
         return __awaiter(this, void 0, void 0, function () {
             var cacheEntry, p, path, extract, retPath;
             return __generator(this, function (_a) {
@@ -149,7 +166,7 @@ var HttpDownloadBuilder = /** @class */ (function () {
                             fs.chmodSync(p, this._fileMode);
                             return [2 /*return*/, cacheEntry];
                         }
-                        return [4 /*yield*/, tc.downloadTool(this._url, undefined, this._auth)];
+                        return [4 /*yield*/, this.downloadTool(this._url, headers)];
                     case 1:
                         path = _a.sent();
                         if (!this._fileToExtract) return [3 /*break*/, 3];
@@ -166,8 +183,67 @@ var HttpDownloadBuilder = /** @class */ (function () {
                         if (this._addToPath) {
                             core.addPath(retPath);
                         }
+                        fs.unlinkSync(path);
                         return [2 /*return*/, retPath];
                 }
+            });
+        });
+    };
+    HttpDownloadBuilder.prototype.downloadTool = function (url, headers) {
+        return __awaiter(this, void 0, void 0, function () {
+            var client, response;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        client = this.getHttpClient(headers);
+                        return [4 /*yield*/, client.get(url, { responseType: 'stream' })];
+                    case 1:
+                        response = _a.sent();
+                        return [2 /*return*/, this.streamToDisk(response.data)];
+                }
+            });
+        });
+    };
+    HttpDownloadBuilder.prototype.getHttpClient = function (headers) {
+        if (headers === void 0) { headers = {}; }
+        if (this._auth) {
+            headers = __assign(__assign({}, headers), { authorization: this._auth });
+        }
+        headers = __assign(__assign({}, headers), { 'User-Agent': 'sap-piper-action' });
+        var agent = new https_1.default.Agent({
+            rejectUnauthorized: false
+        });
+        return axios_1.default.create({
+            headers: headers,
+            httpsAgent: agent
+        });
+    };
+    HttpDownloadBuilder.prototype.streamToDisk = function (downloadStream) {
+        return __awaiter(this, void 0, void 0, function () {
+            var tmpPath, writeStream;
+            var _this = this;
+            return __generator(this, function (_a) {
+                tmpPath = process.env.RUNNER_TEMP + "/piper-download-" + Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+                writeStream = fs.createWriteStream(tmpPath);
+                downloadStream.pipe(writeStream);
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        var error = false;
+                        downloadStream.on('error', function (err) {
+                            error = true;
+                            writeStream.close();
+                            fs.unlinkSync(tmpPath);
+                            reject(err);
+                        });
+                        downloadStream.on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                if (!error) {
+                                    writeStream.close();
+                                    resolve(tmpPath);
+                                }
+                                return [2 /*return*/];
+                            });
+                        }); });
+                    })];
             });
         });
     };

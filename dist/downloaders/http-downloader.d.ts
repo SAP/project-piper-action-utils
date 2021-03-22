@@ -1,20 +1,25 @@
 /// <reference types="node" />
 import * as fs from 'fs';
+import { AxiosInstance } from 'axios';
 export declare enum ArchiveType {
     ZIP7 = 0,
     TAR = 1,
     ZIP = 2,
     XAR = 3
 }
+export declare type Headers = {
+    [k: string]: string;
+};
 export declare class HttpDownloadBuilder {
     protected _url: string;
-    protected _version?: string;
+    protected _version: string;
     protected readonly _name: string;
     protected _auth?: string;
     protected _fileToExtract?: string;
     protected _archiveType?: ArchiveType;
     protected _fileMode: fs.Mode;
     protected _addToPath: boolean;
+    protected _additionalHeaders: {};
     /**
      * Constructor
      * @param name the name of the tool which should be download
@@ -44,7 +49,10 @@ export declare class HttpDownloadBuilder {
     /**
      * Executes the download
      */
-    download(): Promise<string>;
+    download(headers?: Headers): Promise<string>;
     private downloadUsingCache;
+    private downloadTool;
+    protected getHttpClient(headers?: Headers): AxiosInstance;
+    private streamToDisk;
     private getExtractMethod;
 }

@@ -81,7 +81,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GithubDownloaderBuilder = void 0;
 var core = __importStar(require("@actions/core"));
-var http = __importStar(require("@actions/http-client"));
 var http_downloader_1 = require("./http-downloader");
 var GithubDownloaderBuilder = /** @class */ (function (_super) {
     __extends(GithubDownloaderBuilder, _super);
@@ -92,6 +91,10 @@ var GithubDownloaderBuilder = /** @class */ (function (_super) {
         _this._githubRepository = githubRepository;
         return _this;
     }
+    GithubDownloaderBuilder.prototype.auth = function (username, password) {
+        _super.prototype.auth.call(this, username, password);
+        return this;
+    };
     GithubDownloaderBuilder.prototype.githubEndpoint = function (githubEndpoint) {
         this._githubEndpoint = githubEndpoint;
         return this;
@@ -100,64 +103,88 @@ var GithubDownloaderBuilder = /** @class */ (function (_super) {
         this._githubApiEndpoint = apiEndpoint;
         return this;
     };
-    GithubDownloaderBuilder.prototype.download = function () {
+    GithubDownloaderBuilder.prototype.download = function (headers) {
+        if (headers === void 0) { headers = {}; }
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.refreshUrl()];
                     case 1:
                         _a.sent();
-                        return [2 /*return*/, _super.prototype.download.call(this)];
+                        return [2 /*return*/, _super.prototype.download.call(this, __assign(__assign({}, headers), { 'accept': 'application/octet-stream' }))];
                 }
             });
         });
     };
     GithubDownloaderBuilder.prototype.refreshUrl = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var commonUrlPrefix, _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var release, assetUrl;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        commonUrlPrefix = this._githubEndpoint + "/" + this._githubOrg + "/" + this._githubRepository + "/releases";
+                        release = null;
                         if (!(this._version === 'latest' || this._version === '')) return [3 /*break*/, 2];
-                        _a = this;
                         return [4 /*yield*/, this.getLatestRelease()];
                     case 1:
-                        _a._version = _b.sent();
-                        core.info('Downloading latest release of pipsaper');
-                        this._url = commonUrlPrefix + "/latest/download/" + this._name;
-                        return [3 /*break*/, 3];
+                        release = _a.sent();
+                        core.info('Downloading latest release of piper');
+                        return [3 /*break*/, 5];
                     case 2:
-                        core.info("Downloading tag " + this._version + " of piper");
-                        this._url = commonUrlPrefix + "/download/" + this._version + "/" + this._name;
-                        _b.label = 3;
-                    case 3: return [2 /*return*/];
+                        if (!this._version) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.getReleaseByTag(this._version)];
+                    case 3:
+                        release = _a.sent();
+                        return [3 /*break*/, 5];
+                    case 4: throw new Error('no version specified');
+                    case 5:
+                        this._version = release.tag_name;
+                        assetUrl = release.assets.filter(function (asset) { return asset.name == _this._name; }).map(function (asset) { return asset.url; })[0];
+                        core.debug("Downloading from " + assetUrl);
+                        this._url = assetUrl;
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    GithubDownloaderBuilder.prototype.getReleaseByTag = function (tagName) {
+        return __awaiter(this, void 0, void 0, function () {
+            var client, requestUrl, res, release;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        core.debug('Loading release for tags');
+                        client = this.getHttpClient({ accept: 'application/json' });
+                        requestUrl = this.getApiEndpoint() + "/repos/" + this._githubOrg + "/" + this._githubRepository + "/releases/tags/" + tagName;
+                        return [4 /*yield*/, client.get(requestUrl)];
+                    case 1:
+                        res = _a.sent();
+                        return [4 /*yield*/, res.data];
+                    case 2:
+                        release = _a.sent();
+                        core.debug("latest release was resolved to " + release.tag_name);
+                        return [2 /*return*/, release];
                 }
             });
         });
     };
     GithubDownloaderBuilder.prototype.getLatestRelease = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var headers, client, requestUrl, res, tag_name, _a, _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var client, requestUrl, res, release;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        core.debug('Looking up latest version');
-                        headers = {};
-                        if (this._auth) {
-                            headers = __assign(__assign({}, headers), { Authorization: this._auth });
-                        }
-                        client = new http.HttpClient('sap-piper-action', [], headers);
+                        core.debug('Looking up latest release');
+                        client = this.getHttpClient({ accept: 'application/json' });
                         requestUrl = this.getApiEndpoint() + "/repos/" + this._githubOrg + "/" + this._githubRepository + "/releases/latest";
                         return [4 /*yield*/, client.get(requestUrl)];
                     case 1:
-                        res = _c.sent();
-                        _b = (_a = JSON).parse;
-                        return [4 /*yield*/, res.readBody()];
+                        res = _a.sent();
+                        return [4 /*yield*/, res.data];
                     case 2:
-                        tag_name = _b.apply(_a, [_c.sent()]).tag_name;
-                        core.debug("latest version was resolved to " + tag_name);
-                        return [2 /*return*/, tag_name];
+                        release = _a.sent();
+                        core.debug("latest release was resolved to " + release.tag_name);
+                        return [2 /*return*/, release];
                 }
             });
         });
