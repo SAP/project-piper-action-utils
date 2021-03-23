@@ -14,7 +14,7 @@
   "main": "./dist/index.js",
   "repository": "github:sap/project-piper-action-utils",
   "types": "dist/index.d.ts",
-  "name": "project-piper-action-utils",
+  "name": "@sap/project-piper-action-utils",
   "scripts": {
     "lint": "npx eslint src/**",
     "prebuild": "npx eslint && rm -rf ./dist",
