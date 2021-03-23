@@ -25,7 +25,11 @@
   "jest": {
     "verbose": true
   },
-  "files": ["dist/**", "LICENSE", "README.md"],
+  "files": [
+    "dist/**",
+    "LICENSE",
+    "README.md"
+  ],
   "version": "1.0.0",
   "dependencies": {
     "@actions/artifact": "^0.4.1",
