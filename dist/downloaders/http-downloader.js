@@ -164,7 +164,7 @@ var HttpDownloadBuilder = /** @class */ (function () {
                         if (cacheEntry) {
                             p = pathUtils.join(cacheEntry, this._name);
                             fs.chmodSync(p, this._fileMode);
-                            this.modifyPath(cacheEntry);
+                            this.updatePath(cacheEntry);
                             return [2 /*return*/, cacheEntry];
                         }
                         return [4 /*yield*/, this.downloadTool(this._url, headers)];
@@ -181,14 +181,14 @@ var HttpDownloadBuilder = /** @class */ (function () {
                         return [4 /*yield*/, tc.cacheFile(path, this._name, this._name, this._version)];
                     case 4:
                         retPath = _a.sent();
-                        this.modifyPath(retPath);
+                        this.updatePath(retPath);
                         fs.unlinkSync(path);
                         return [2 /*return*/, retPath];
                 }
             });
         });
     };
-    HttpDownloadBuilder.prototype.modifyPath = function (retPath) {
+    HttpDownloadBuilder.prototype.updatePath = function (retPath) {
         if (this._addToPath) {
             core.addPath(retPath);
         }
