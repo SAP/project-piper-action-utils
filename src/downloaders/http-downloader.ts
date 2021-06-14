@@ -104,6 +104,7 @@ export class HttpDownloadBuilder {
     if (cacheEntry) {
       const p = pathUtils.join(cacheEntry, this._name)
       fs.chmodSync(p, this._fileMode)
+      this.updatePath(cacheEntry)
       return cacheEntry
     }
 
@@ -114,11 +115,15 @@ export class HttpDownloadBuilder {
     }
     fs.chmodSync(path, this._fileMode)
     const retPath = await tc.cacheFile(path, this._name, this._name, this._version)
+    this.updatePath(retPath)
+    fs.unlinkSync(path)
+    return retPath
+  }
+
+  private updatePath(retPath: string): void {
     if (this._addToPath) {
       core.addPath(retPath)
     }
-    fs.unlinkSync(path)
-    return retPath
   }
 
   private async downloadTool(url: string, headers?: Headers): Promise<string> {

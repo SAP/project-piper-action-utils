@@ -51,6 +51,7 @@ export declare class HttpDownloadBuilder {
      */
     download(headers?: Headers): Promise<string>;
     private downloadUsingCache;
+    private modifyPath;
     private downloadTool;
     protected getHttpClient(headers?: Headers): AxiosInstance;
     private streamToDisk;
