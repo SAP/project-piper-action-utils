@@ -30,7 +30,7 @@
     "LICENSE",
     "README.md"
   ],
-  "version": "1.0.0",
+  "version": "1.0.1",
   "dependencies": {
     "@actions/artifact": "^0.4.1",
     "@actions/core": "^1.2.6",
