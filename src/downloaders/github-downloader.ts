@@ -45,7 +45,7 @@ export class GithubDownloaderBuilder extends HttpDownloadBuilder {
 
   private async refreshUrl() {
     let release = null
-    if (this._version === 'latest' || this._version === '') {
+    if (this._version === 'latest' || this._version === 'master' || this._version === '') {
       release = await this.getLatestRelease()
       core.info('Downloading latest release of piper')
     } else if (this._version) {
